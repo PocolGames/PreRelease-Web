@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PreRelease</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <i class="fas fa-rocket"></i>
+                    PreRelease
+                </h1>
+                <p class="tagline">미리 공개되는 특별한 순간들</p>
+            </div>
+        </header>
+
+        <!-- 메인 콘텐츠 -->
+        <main class="main-content">
+            <!-- 포스팅 컨테이너 -->
+            <div id="posts-container" class="posts-container">
+                <!-- 포스팅들이 동적으로 여기에 추가됩니다 -->
+            </div>
+
+            <!-- 로딩 표시 -->
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>포스팅을 불러오는 중...</p>
+            </div>
+
+            <!-- 포스팅이 없을 때 -->
+            <div id="no-posts" class="no-posts" style="display: none;">
+                <i class="fas fa-image"></i>
+                <p>아직 포스팅이 없습니다.</p>
+                <p class="sub-text">첫 번째 포스팅을 추가해보세요!</p>
+            </div>
+        </main>
+
+        <!-- 푸터 -->
+        <footer class="footer">
+            <p>&copy; 2025 PreRelease. Made with ❤️</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript 파일들 -->
+    <script src="posts/posts-data.js"></script>
+    <script src="js/markdown.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
