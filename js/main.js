@@ -36,6 +36,20 @@ async function loadMetadata() {
     }
 }
 
+// ===== 마크다운 파일 로드 =====
+async function loadMarkdownContent(filename) {
+    try {
+        const response = await fetch(`posts/content/${filename}`);
+        if (!response.ok) {
+            throw new Error(`마크다운 파일 ${filename}을 불러올 수 없습니다.`);
+        }
+        return await response.text();
+    } catch (error) {
+        console.error('마크다운 파일 로드 실패:', error);
+        return '내용을 불러올 수 없습니다.';
+    }
+}
+
 // ===== 페이지별 포스팅 로드 =====
 async function loadPostsPage(pageNum) {
     if (isLoading || !hasMorePosts || pageNum < 1) return;
@@ -66,7 +80,7 @@ async function loadPostsPage(pageNum) {
         const pageData = await response.json();
         
         // 잠시 후 포스팅 로드 (로딩 효과를 위해)
-        setTimeout(() => {
+        setTimeout(async () => {
             if (isFirstLoad) {
                 loading.style.display = 'none';
             } else {
@@ -77,10 +91,16 @@ async function loadPostsPage(pageNum) {
                 // 포스팅 렌더링 (최신순으로 표시하기 위해 정렬)
                 const sortedPosts = pageData.posts.sort((a, b) => new Date(b.date) - new Date(a.date));
                 
-                sortedPosts.forEach(post => {
+                // 각 포스트의 마크다운 내용을 로드하고 렌더링
+                for (const post of sortedPosts) {
+                    // 마크다운 파일이 지정되어 있으면 로드
+                    if (post.contentFile) {
+                        post.content = await loadMarkdownContent(post.contentFile);
+                    }
+                    
                     const postElement = createPostElement(post);
                     container.appendChild(postElement);
-                });
+                }
                 
                 currentPage = pageNum;
                 
