@@ -1,5 +1,9 @@
 // ===== 전역 변수 =====
 let currentImageModal = null;
+let currentPage = 0;
+let isLoading = false;
+let hasMorePosts = true;
+let metadata = null;
 
 // ===== DOM이 로드된 후 실행 =====
 document.addEventListener('DOMContentLoaded', function() {
@@ -7,39 +11,145 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ===== 앱 초기화 =====
-function initializeApp() {
-    loadPosts();
+async function initializeApp() {
+    await loadMetadata();
+    await loadPostsPage(1);
     setupImageModal();
+    setupInfiniteScroll();
 }
 
-// ===== 포스팅 로드 =====
-function loadPosts() {
+// ===== 메타데이터 로드 =====
+async function loadMetadata() {
+    try {
+        const response = await fetch('posts/metadata.json');
+        if (!response.ok) throw new Error('메타데이터를 불러올 수 없습니다.');
+        metadata = await response.json();
+        console.log('메타데이터 로드 완료:', metadata);
+    } catch (error) {
+        console.error('메타데이터 로드 실패:', error);
+        metadata = {
+            totalPosts: 0,
+            totalPages: 0,
+            postsPerPage: 20
+        };
+    }
+}
+
+// ===== 페이지별 포스팅 로드 =====
+async function loadPostsPage(pageNum) {
+    if (isLoading || !hasMorePosts) return;
+    
     const container = document.getElementById('posts-container');
     const loading = document.getElementById('loading');
     const noPosts = document.getElementById('no-posts');
     
-    // 로딩 표시
-    loading.style.display = 'block';
-    noPosts.style.display = 'none';
+    isLoading = true;
     
-    // 잠시 후 포스팅 로드 (실제 로딩 효과를 위해)
-    setTimeout(() => {
-        loading.style.display = 'none';
+    // 첫 번째 페이지가 아니면 로딩 표시를 하단에
+    if (pageNum === 1) {
+        loading.style.display = 'block';
+        noPosts.style.display = 'none';
+    } else {
+        showBottomLoading();
+    }
+    
+    try {
+        const response = await fetch(`posts/page-${pageNum}.json`);
         
-        if (typeof postsData === 'undefined' || !postsData || postsData.length === 0) {
-            noPosts.style.display = 'block';
-            return;
+        if (!response.ok) {
+            throw new Error(`페이지 ${pageNum}을 불러올 수 없습니다.`);
         }
         
-        // 날짜순으로 정렬 (최신순)
-        const sortedPosts = postsData.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const pageData = await response.json();
         
-        // 포스팅 렌더링
-        sortedPosts.forEach(post => {
-            const postElement = createPostElement(post);
-            container.appendChild(postElement);
-        });
-    }, 500);
+        // 잠시 후 포스팅 로드 (로딩 효과를 위해)
+        setTimeout(() => {
+            if (pageNum === 1) {
+                loading.style.display = 'none';
+            } else {
+                hideBottomLoading();
+            }
+            
+            if (pageData.posts && pageData.posts.length > 0) {
+                // 포스팅 렌더링
+                pageData.posts.forEach(post => {
+                    const postElement = createPostElement(post);
+                    container.appendChild(postElement);
+                });
+                
+                currentPage = pageNum;
+                hasMorePosts = pageData.hasMore;
+                
+                console.log(`페이지 ${pageNum} 로드 완료. 더 있음: ${hasMorePosts}`);
+            } else if (pageNum === 1) {
+                noPosts.style.display = 'block';
+            }
+            
+            isLoading = false;
+        }, pageNum === 1 ? 500 : 200);
+        
+    } catch (error) {
+        console.error(`페이지 ${pageNum} 로드 실패:`, error);
+        
+        if (pageNum === 1) {
+            loading.style.display = 'none';
+            noPosts.style.display = 'block';
+        } else {
+            hideBottomLoading();
+        }
+        
+        hasMorePosts = false;
+        isLoading = false;
+    }
+}
+
+// ===== 하단 로딩 표시 =====
+function showBottomLoading() {
+    let bottomLoading = document.getElementById('bottom-loading');
+    if (!bottomLoading) {
+        bottomLoading = document.createElement('div');
+        bottomLoading.id = 'bottom-loading';
+        bottomLoading.className = 'bottom-loading';
+        bottomLoading.innerHTML = `
+            <div class="loading-content">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>더 많은 포스팅을 불러오는 중...</span>
+            </div>
+        `;
+        document.querySelector('.main-content').appendChild(bottomLoading);
+    }
+    bottomLoading.style.display = 'block';
+}
+
+function hideBottomLoading() {
+    const bottomLoading = document.getElementById('bottom-loading');
+    if (bottomLoading) {
+        bottomLoading.style.display = 'none';
+    }
+}
+
+// ===== 무한 스크롤 설정 =====
+function setupInfiniteScroll() {
+    let throttleTimer = null;
+    
+    window.addEventListener('scroll', () => {
+        if (throttleTimer) return;
+        
+        throttleTimer = setTimeout(() => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            
+            // 스크롤이 하단 근처에 도달했을 때
+            if (scrollTop + windowHeight >= documentHeight - 200) {
+                if (hasMorePosts && !isLoading) {
+                    loadPostsPage(currentPage + 1);
+                }
+            }
+            
+            throttleTimer = null;
+        }, 100);
+    });
 }
 
 // ===== 포스팅 요소 생성 =====
@@ -228,16 +338,3 @@ function closeImageModal() {
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';
 }
-
-// ===== 스크롤 이벤트 처리 (무한 스크롤 준비) =====
-window.addEventListener('scroll', () => {
-    // 추후 무한 스크롤 기능을 위한 준비
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const windowHeight = window.innerHeight;
-    const documentHeight = document.documentElement.scrollHeight;
-    
-    // 스크롤이 거의 끝에 도달했을 때
-    if (scrollTop + windowHeight >= documentHeight - 100) {
-        // 추가 포스팅 로드 로직을 여기에 구현할 수 있습니다
-    }
-});
