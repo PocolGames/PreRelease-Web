@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ===== 앱 초기화 =====
 async function initializeApp() {
     await loadMetadata();
-    await loadPostsPage(1);
+    // 가장 높은 번호 페이지부터 시작 (최신 포스트)
+    await loadPostsPage(metadata.totalPages);
     setupImageModal();
     setupInfiniteScroll();
 }
@@ -29,7 +30,7 @@ async function loadMetadata() {
         console.error('메타데이터 로드 실패:', error);
         metadata = {
             totalPosts: 0,
-            totalPages: 0,
+            totalPages: 1,
             postsPerPage: 20
         };
     }
@@ -37,7 +38,7 @@ async function loadMetadata() {
 
 // ===== 페이지별 포스팅 로드 =====
 async function loadPostsPage(pageNum) {
-    if (isLoading || !hasMorePosts) return;
+    if (isLoading || !hasMorePosts || pageNum < 1) return;
     
     const container = document.getElementById('posts-container');
     const loading = document.getElementById('loading');
@@ -45,8 +46,10 @@ async function loadPostsPage(pageNum) {
     
     isLoading = true;
     
-    // 첫 번째 페이지가 아니면 로딩 표시를 하단에
-    if (pageNum === 1) {
+    // 첫 번째 로딩인지 확인 (가장 높은 페이지 번호)
+    const isFirstLoad = (currentPage === 0);
+    
+    if (isFirstLoad) {
         loading.style.display = 'block';
         noPosts.style.display = 'none';
     } else {
@@ -64,34 +67,38 @@ async function loadPostsPage(pageNum) {
         
         // 잠시 후 포스팅 로드 (로딩 효과를 위해)
         setTimeout(() => {
-            if (pageNum === 1) {
+            if (isFirstLoad) {
                 loading.style.display = 'none';
             } else {
                 hideBottomLoading();
             }
             
             if (pageData.posts && pageData.posts.length > 0) {
-                // 포스팅 렌더링
-                pageData.posts.forEach(post => {
+                // 포스팅 렌더링 (최신순으로 표시하기 위해 정렬)
+                const sortedPosts = pageData.posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                sortedPosts.forEach(post => {
                     const postElement = createPostElement(post);
                     container.appendChild(postElement);
                 });
                 
                 currentPage = pageNum;
-                hasMorePosts = pageData.hasMore;
+                
+                // 더 오래된 페이지가 있는지 확인 (번호가 더 낮은 페이지)
+                hasMorePosts = pageNum > 1;
                 
                 console.log(`페이지 ${pageNum} 로드 완료. 더 있음: ${hasMorePosts}`);
-            } else if (pageNum === 1) {
+            } else if (isFirstLoad) {
                 noPosts.style.display = 'block';
             }
             
             isLoading = false;
-        }, pageNum === 1 ? 500 : 200);
+        }, isFirstLoad ? 500 : 200);
         
     } catch (error) {
         console.error(`페이지 ${pageNum} 로드 실패:`, error);
         
-        if (pageNum === 1) {
+        if (isFirstLoad) {
             loading.style.display = 'none';
             noPosts.style.display = 'block';
         } else {
@@ -143,7 +150,8 @@ function setupInfiniteScroll() {
             // 스크롤이 하단 근처에 도달했을 때
             if (scrollTop + windowHeight >= documentHeight - 200) {
                 if (hasMorePosts && !isLoading) {
-                    loadPostsPage(currentPage + 1);
+                    // 다음으로 오래된 페이지 로드 (번호가 더 작은 페이지)
+                    loadPostsPage(currentPage - 1);
                 }
             }
             
