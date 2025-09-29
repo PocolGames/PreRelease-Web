@@ -12,21 +12,27 @@ PR_Web/
 │   └── responsive.css     # 반응형 디자인
 ├── js/
 │   ├── main.js           # 메인 JavaScript
-│   ├── markdown.js       # Markdown 파서
-│   └── post-manager.js   # 포스팅 관리 도구
+│   └── markdown.js       # Markdown 파서
 ├── images/               # 이미지 파일들
+│   ├── post-1/          # 포스트별 이미지 폴더
+│   ├── post-2/
+│   └── ...
 ├── posts/
-│   ├── metadata.json     # 전체 포스팅 정보
-│   ├── page-1.json      # 최신 20개 포스팅
-│   ├── page-2.json      # 그 다음 20개 포스팅
-│   └── ...              # 추가 페이지들
+│   ├── metadata.json     # 전체 페이지 정보
+│   ├── page-1.json      # 1페이지 포스팅
+│   ├── page-2.json      # 2페이지 포스팅
+│   ├── content/         # 마크다운 컨텐츠 파일
+│   │   ├── post-1.md
+│   │   ├── post-2.md
+│   │   └── ...
+│   └── ...
 └── README.md             # 이 파일
 ```
 
-## ⚡ 새로운 성능 특징
+## ⚡ 주요 특징
 
 ### 📈 페이지네이션 시스템
-- **빠른 초기 로딩**: 첫 20개 포스팅만 로드
+- **빠른 초기 로딩**: 첫 페이지만 로드
 - **무한 스크롤**: 스크롤 시 자동으로 다음 페이지 로드
 - **메모리 효율성**: 필요한 만큼만 로드하여 메모리 절약
 - **확장성**: 수천 개의 포스팅도 문제없이 처리
@@ -38,94 +44,85 @@ PR_Web/
 
 ## ✍️ 새 포스팅 추가하기
 
-### 방법 1: 수동 추가 (간단한 방법)
+### 1단계: 마크다운 파일 생성
+`posts/content/` 폴더에 새로운 마크다운 파일 생성:
 
-#### 1단계: 이미지 준비 (선택사항)
+**예시: `posts/content/post-28.md`**
+```markdown
+# 새로운 포스팅 제목 🎉
+
+이것은 **새로운 포스팅**입니다!
+
+## 특징
+- 마크다운으로 작성
+- 자동으로 HTML로 변환
+- 이미지 갤러리 지원
+
+> 정말 간편하죠? ✨
+```
+
+### 2단계: 이미지 준비 (선택사항)
 - 사용할 이미지들을 `images/` 폴더에 복사
 - 지원 형식: JPG, PNG, GIF, WebP
 - 권장 크기: 800x600 이상
 
-#### 2단계: 첫 번째 페이지에 포스팅 추가
-`posts/page-1.json` 파일을 열고 `posts` 배열의 **맨 앞에** 새 포스팅을 추가:
+### 3단계: 페이지 JSON에 포스팅 추가
+가장 최근 페이지 파일(예: `posts/page-2.json`)을 열고 `posts` 배열의 **맨 앞에** 새 포스팅을 추가:
 
 ```json
 {
-    "page": 1,
+    "page": 2,
     "hasMore": false,
     "posts": [
         {
-            "id": 6,
-            "date": "2025-09-10",
-            "content": "# 새로운 포스팅 🎉\n\n**내용을 여기에** 작성하세요!",
+            "id": 28,
+            "date": "2025-09-30",
+            "contentFile": "post-28.md",
             "images": [
-                "images/new-photo.jpg"
+                "images/post-28/00.png",
+                "images/post-28/01.png"
             ]
-        },
+        }
         // ... 기존 포스팅들
     ]
 }
 ```
 
-#### 3단계: 메타데이터 업데이트
-`posts/metadata.json` 파일에서 총 포스팅 수 증가:
+### 4단계: 페이지 분할이 필요한 경우
+한 페이지에 15개가 넘으면 새로운 페이지 파일을 생성:
 
+**예시: page-3.json 생성**
 ```json
 {
-    "totalPosts": 6,
-    "totalPages": 1,
-    "postsPerPage": 20,
-    "lastUpdated": "2025-09-10T12:00:00Z",
-    "latestPostDate": "2025-09-10"
-}
-```
-
-#### 4단계: 20개 초과 시 페이지 분할
-한 페이지에 20개가 넘으면 `page-2.json` 생성하여 분할:
-
-**page-1.json** (최신 20개):
-```json
-{
-    "page": 1,
+    "page": 3,
     "hasMore": true,
-    "posts": [/* 최신 20개 */]
+    "posts": [
+        {
+            "id": 28,
+            "date": "2025-09-30",
+            "contentFile": "post-28.md",
+            "images": ["images/post-28/00.png"]
+        }
+    ]
 }
 ```
 
-**page-2.json** (그 다음 포스팅들):
+**이전 페이지의 hasMore를 true로 변경**
 ```json
 {
     "page": 2,
-    "hasMore": false,
-    "posts": [/* 나머지 포스팅들 */]
+    "hasMore": true,
+    "posts": [/* 기존 포스팅들 */]
 }
 ```
 
-### 방법 2: 자동 도구 사용 (개발자용)
+### 5단계: 메타데이터 업데이트
+새 페이지를 생성했다면 `posts/metadata.json` 파일에서 `totalPages` 증가:
 
-브라우저 개발자 도구에서 다음 코드 실행:
-
-```javascript
-// 새 포스팅 데이터
-const newPost = {
-    date: "2025-09-10",
-    content: `# 새로운 포스팅 🎉
-
-이것은 **새로운 포스팅**입니다!
-
-## 특징
-- 자동으로 최상단에 배치됩니다
-- 페이지네이션이 자동으로 처리됩니다
-
-> 정말 간편하죠? ✨`,
-    images: [
-        "images/new-photo-1.jpg",
-        "images/new-photo-2.jpg"
-    ]
-};
-
-// 포스트 매니저로 추가 (콘솔에 업데이트된 JSON 출력)
-const postManager = new PostManager();
-postManager.addNewPost(newPost);
+```json
+{
+    "totalPages": 3
+}
 ```
 
 ## 📝 Markdown 문법 가이드
@@ -164,11 +161,11 @@ postManager.addNewPost(newPost);
 ```
 
 ### 코드 블록
-```markdown
+````markdown
 ```javascript
 console.log("Hello World!");
 ```
-```
+````
 
 ### 수평선
 ```markdown
@@ -191,14 +188,15 @@ console.log("Hello World!");
 ## 🛠️ 고급 관리
 
 ### 포스팅 편집
-1. 해당 포스팅이 있는 페이지 파일 찾기
-2. JSON에서 해당 포스팅 객체 수정
+1. `posts/content/` 폴더에서 해당 마크다운 파일 수정
+2. 이미지 변경이 필요하면 페이지 JSON 파일에서 `images` 배열 수정
 3. 파일 저장 후 브라우저 새로고침
 
 ### 포스팅 삭제
-1. 해당 페이지에서 포스팅 객체 제거
-2. 페이지가 비어있으면 파일 삭제
-3. `metadata.json`에서 `totalPosts` 감소
+1. 해당 페이지 JSON에서 포스팅 객체 제거
+2. `posts/content/`에서 마크다운 파일 삭제 (선택)
+3. `images/` 폴더에서 이미지 삭제 (선택)
+4. 페이지가 비어있으면 JSON 파일 삭제 후 `metadata.json`의 `totalPages` 감소
 
 ### 백업 전략
 ```bash
@@ -216,9 +214,6 @@ cp -r posts posts_backup_$(date +%Y%m%d)
 - `#71767b`: 보조 텍스트 색
 - `#2f2f2f`: 경계선 색
 
-### 페이지 크기 조정
-`posts/metadata.json`에서 `postsPerPage` 값 변경 (기본값: 20)
-
 ### 폰트 변경
 `css/style.css`의 `font-family` 속성을 수정
 
@@ -230,7 +225,7 @@ cp -r posts posts_backup_$(date +%Y%m%d)
 - 적절한 해상도 유지 (800-1200px 폭)
 
 ### 페이지 로딩 최적화
-- 페이지당 포스팅 수를 15-25개로 유지
+- 페이지당 포스팅 수를 15-20개로 유지
 - 불필요한 이미지 제거
 - 텍스트 압축 사용
 
@@ -268,19 +263,26 @@ Cache-Control: public, max-age=3600
 ## 🆘 문제 해결
 
 ### 포스팅이 보이지 않을 때
-1. `posts/metadata.json`과 `page-1.json` 문법 확인
+1. `posts/metadata.json`과 `page-X.json` 문법 확인
 2. 브라우저 개발자 도구(F12)에서 Network 탭 확인
 3. JSON 파일이 올바르게 로드되는지 확인
+4. 마크다운 파일 경로가 올바른지 확인
 
 ### 무한 스크롤이 작동하지 않을 때
 1. `hasMore` 값이 올바른지 확인
 2. 페이지 파일들이 순서대로 있는지 확인
-3. 콘솔에서 JavaScript 오류 확인
+3. `metadata.json`의 `totalPages` 값이 정확한지 확인
+4. 콘솔에서 JavaScript 오류 확인
 
 ### 이미지가 로드되지 않을 때
 1. 파일 경로와 이름 확인 (대소문자 구분)
 2. 이미지 파일이 `images/` 폴더에 있는지 확인
 3. 네트워크 탭에서 404 오류 확인
+
+### 마크다운이 제대로 렌더링되지 않을 때
+1. 마크다운 파일이 UTF-8로 저장되었는지 확인
+2. `contentFile` 경로가 정확한지 확인
+3. 마크다운 문법이 올바른지 확인
 
 ## 💡 고급 팁
 
@@ -296,27 +298,14 @@ console.time('Page Load');
 console.timeEnd('Page Load');
 ```
 
-### 자동화 스크립트
-포스팅 추가를 자동화하는 Node.js 스크립트 작성 가능:
-
-```javascript
-// add-post.js 예시
-const fs = require('fs');
-const path = require('path');
-
-function addPost(newPost) {
-    // JSON 파일 읽기/쓰기 로직
-    // 자동 페이지네이션 처리
-}
-```
-
 ## 📞 지원
 
 ### 문제 진단 체크리스트
 1. ✅ JSON 파일 문법이 올바른가?
-2. ✅ 이미지 파일이 올바른 위치에 있는가?
-3. ✅ 브라우저 콘솔에 오류가 있는가?
-4. ✅ 네트워크 요청이 성공하는가?
+2. ✅ 마크다운 파일이 올바른 위치에 있는가?
+3. ✅ 이미지 파일이 올바른 위치에 있는가?
+4. ✅ 브라우저 콘솔에 오류가 있는가?
+5. ✅ 네트워크 요청이 성공하는가?
 
 ### 디버깅 도구
 - JSON 유효성 검사: [JSONLint](https://jsonlint.com/)
