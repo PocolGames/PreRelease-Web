@@ -111,7 +111,8 @@ body {
 }
 
 .post-content {
-    margin-left: 52px;
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
 .post-text {
