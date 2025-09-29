@@ -49,8 +49,6 @@ class PostManager {
             
             // 7. metadata.json 업데이트
             metadata.totalPosts = newPostId;
-            metadata.lastUpdated = new Date().toISOString();
-            metadata.latestPostDate = newPost.date;
             await this.saveMetadata(metadata);
             
             console.log(`새 포스팅(ID: ${newPostId})이 성공적으로 추가되었습니다!`);
