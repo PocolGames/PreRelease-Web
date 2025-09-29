@@ -123,15 +123,22 @@ body {
 }
 
 /* ===== Markdown 스타일 ===== */
-.post-text h1,
+.post-text h1 {
+    color: #ffffff;
+    margin: 20px 0 0px 0;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .post-text h2,
 .post-text h3,
 .post-text h4,
 .post-text h5,
 .post-text h6 {
     color: #ffffff;
-    margin: 16px 0 8px 0;
+    margin: 0px 0 0px 0;
     font-weight: 700;
+    line-height: 1;
 }
 
 .post-text h1 { font-size: 24px; }
@@ -139,7 +146,7 @@ body {
 .post-text h3 { font-size: 18px; }
 
 .post-text p {
-    margin-bottom: 12px;
+    margin-bottom: 0px;
 }
 
 .post-text strong {
@@ -199,7 +206,7 @@ body {
 }
 
 .post-text li {
-    margin-bottom: 4px;
+    margin-bottom: 0px;
 }
 
 /* ===== 이미지 갤러리 ===== */
